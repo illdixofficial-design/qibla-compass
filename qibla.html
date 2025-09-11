@@ -6,12 +6,11 @@
 <title>Компас Киблы</title>
 <style>
   :root{
-    /* палитра из 1-го варианта */
-    --bg1:#2e3a87; --bg2:#7386ff;
+    --bg1:#2e3a87; --bg2:#7386ff;      /* палитра из 1-го варианта */
     --dial:#f7fbff; --ring:#142352; --tick:#cfd6ff;
     --text:#ffffff; --muted:#c7d0ff;
     --accent:#f9c846; --accent2:#f2b22c; --ok:#00d08a;
-    --needleBody:#1f2a66; --needleTip:#ffcc33;
+    --needleTip:#ffcc33;
   }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
@@ -36,7 +35,7 @@
 
   .dial-wrap{position:relative; width:min(90vw,520px); aspect-ratio:1; margin:16px auto 6px}
 
-  /* слои */
+  /* слои циферблата */
   .rim{
     position:absolute; inset:0; border-radius:50%;
     background: radial-gradient(60% 60% at 50% 45%, #3a4aa1 0 30%, #1e295c 70%);
@@ -66,7 +65,7 @@
   }
   .tick.major{width:4px; height:15%; background:#9fb0ff}
 
-  /* NSEW — над всем и отдельно от кольца, чтобы не перекрывались */
+  /* NSEW — отдельный слой, чтобы ничего не заезжало */
   .cardinals{position:absolute; inset:0; z-index:5; pointer-events:none;}
   .cardinals .lbl{
     position:absolute; left:50%; top:50%;
@@ -83,16 +82,15 @@
   .cardinals .E{left:94.5%; font-size:18px}
   .cardinals .W{left:5.5%;  font-size:18px}
 
-  /* игла — вращение строго вокруг геометрического центра циферблата */
+  /* игла — центр вращения ровно в центре */
   .needle{
     position:absolute; left:50%; top:50%;
     width:80%; height:80%;
     transform:translate(-50%,-50%) rotate(0deg);
-    transform-origin:50% 50%;  /* << центр */
+    transform-origin:50% 50%;
     z-index:6; pointer-events:none;
   }
   .needle .arrow{
-    /* сам «рисунок» иглы расположен от центра кверху */
     position:absolute; left:50%; top:10%;
     transform:translateX(-50%);
     width:0; height:0;
@@ -109,7 +107,7 @@
     box-shadow: 0 6px 18px rgba(0,0,0,.25);
   }
 
-  /* центральная «шайба» — отдельным слоем РОВНО в центре */
+  /* центральный хаб — строго по центру */
   .hub-center{
     position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
     width:58px; height:58px; border-radius:50%;
@@ -119,16 +117,16 @@
     z-index:7; pointer-events:none;
   }
 
-  /* метка Киблы — меньше и «под» S (чуть ближе к центру, чтобы не перекрывать) */
+  /* метка Киблы — под N (сверху), меньше и не перекрывает букву */
   .kaaba{
-    position:absolute; left:50%; top:86%; /* под югом */
+    position:absolute; left:50%; top:14%;
     transform:translate(-50%,-50%);
-    width:38px; height:38px; border-radius:9px;
+    width:34px; height:34px; border-radius:8px;
     background:
       linear-gradient(135deg, #2b2b2b 63%, #ffd23c 63%) no-repeat,
       linear-gradient(#111, #333);
     box-shadow: 0 10px 20px rgba(0,0,0,.35);
-    z-index:4; /* ниже подписей S/E/W/N */
+    z-index:4; /* ниже подписей N/E/S/W */
   }
 
   .caption{margin-top:8px; text-align:center; line-height:1.35}
@@ -166,16 +164,14 @@
       <div class="lbl W">W</div>
     </div>
 
-    <!-- игла -->
     <div id="needle" class="needle" aria-hidden="true">
       <div class="arrow"></div>
       <div class="shaft"></div>
     </div>
 
-    <!-- центральный хаб — отдельный слой РОВНО в центре -->
     <div class="hub-center" aria-hidden="true"></div>
 
-    <!-- кибла «под S» -->
+    <!-- Кибла теперь под N -->
     <div class="kaaba" title="Кибла"></div>
   </div>
 
@@ -201,7 +197,7 @@
   const brngEl   = EL('#brng');
   const headEl   = EL('#head');
 
-  // деления каждые 10°, утолщаем на 0/90/180/270
+  // деления каждые 10°, усиленные на 0/90/180/270
   const hashes = document.getElementById('hashes');
   for (let i=0;i<36;i++){
     const d = document.createElement('div');
@@ -232,10 +228,11 @@
   function updateNeedle(){
     if (qiblaBearing==null || lastHeading==null) return;
 
-    /* ВАЖНО: инверсию поправили — теперь стрелка «идёт» в ту же сторону,
-       что и ваше вращение телефона.
-       Раньше было (qibla - heading), теперь делаем (heading - qibla). */
-    const rel = norm(lastHeading - qiblaBearing);
+    /* Правильное направление:
+       - на Android используем heading = 360 - alpha (ниже),
+       - на iOS webkitCompassHeading уже корректный.
+       Итоговый поворот стрелки: (qibla - heading). */
+    const rel = norm(qiblaBearing - lastHeading);
 
     needle.style.transform = `translate(-50%,-50%) rotate(${rel}deg)`;
     brngEl.textContent = `${Math.round(qiblaBearing)}°`;
@@ -283,11 +280,11 @@
       function onOrient(e) {
         let heading = null;
         if (typeof e.webkitCompassHeading === 'number') {
-          // iOS Safari/WebView — истинный курс, 0 = север, возрастает по часовой
+          // iOS Safari/WebView — истинный курс (0 = север, растёт по часовой)
           heading = e.webkitCompassHeading;
         } else if (typeof e.alpha === 'number') {
-          // Android Chrome — используем как есть (без "360 - alpha"), чтобы убрать инверсию
-          heading = e.alpha;
+          // Android Chrome — используем классическую формулу (инверсия устранена):
+          heading = 360 - e.alpha;
         }
         if (heading != null) {
           lastHeading = norm(heading);
