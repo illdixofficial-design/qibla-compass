@@ -1,123 +1,61 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Компас Киблы</title>
-<style>
-  :root{
-    --bg1:#1d2549; --bg2:#3b4ea1;
-    --ring:#0c183f; --dial:#f7fbff; --tick:#ced8ff;
-    --text:#ffffff; --muted:#a9b6e6;
-    --accent:#ffd44d; --accent2:#ffb300; --ok:#00d08a;
-    --needle:#1f2a66; --needleTip:#ffcc33;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0}
-  body{
-    font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;
-    color:var(--text);
-    background: radial-gradient(120% 120% at 50% -10%, var(--bg2), var(--bg1));
-    display:flex; flex-direction:column; align-items:center;
-  }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Компас Киблы</title>
+  <style>
+    :root { --bg1:#2e3a87; --bg2:#7386ff; --accent:#f9c846; --text:#ffffff; }
+    html,body{height:100%;margin:0}
+    body{
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;
+      background: radial-gradient(120% 120% at 50% -10%, var(--bg2), var(--bg1));
+      color: var(--text); display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    }
+    header{padding:18px 16px 8px; width:100%; max-width:520px; text-align:center}
+    h1{font-size:20px; margin:0 0 8px}
+    #startBtn{
+      border:0; background:linear-gradient(180deg,#ffd86b,#f2b22c);
+      padding:12px 28px; border-radius:999px; font-weight:700; font-size:18px; color:#3a2a00;
+      box-shadow:0 10px 18px rgba(0,0,0,.25); cursor:pointer;
+    }
+    #status{font-size:14px; opacity:.9; margin-top:10px; min-height:1.2em}
 
-  header{width:100%;max-width:560px; text-align:center; padding:18px 16px 8px}
-  h1{margin:0 0 8px; font-size:22px; letter-spacing:.2px}
-  #startBtn{
-    border:0; cursor:pointer; outline:0;
-    padding:12px 28px; border-radius:999px;
-    font-weight:800; font-size:18px; color:#382a00;
-    background:linear-gradient(180deg, #ffe27a 0%, #ffc225 100%);
-    box-shadow:0 10px 22px rgba(0,0,0,.32);
-  }
-  #status{margin-top:10px; font-size:13px; color:var(--muted); min-height:1.2em}
+    .dial-wrap{position:relative; margin:28px auto; width:min(86vw,420px); aspect-ratio:1; }
+    .dial{
+      position:absolute; inset:0; border-radius:50%; background: radial-gradient(60% 60% at 50% 45%, #ffffff, #e9eefb 70%, #c8d1f7 71%, #142352 72%);
+      box-shadow: inset 0 0 40px rgba(0,0,0,.2), 0 18px 40px rgba(0,0,0,.35);
+    }
+    .ticks{position:absolute; inset:7% 7%; border-radius:50%; border:10px solid rgba(20,35,82,.12);}
+    .cardinal{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:90%; height:90%;}
+    .cardinal span{
+      position:absolute; font-weight:700; color:#0a1b4d; opacity:.65;
+      transform:translate(-50%,-50%);
+    }
+    .cardinal .N{left:50%; top:2.5%} .S{left:50%; top:97.5%}
+    .cardinal .E{left:97.5%; top:50%} .W{left:2.5%; top:50%}
 
-  .dial-wrap{position:relative; width:min(90vw,520px); aspect-ratio:1; margin:16px auto 10px}
-  .rim{
-    position:absolute; inset:0; border-radius:50%;
-    background: radial-gradient(60% 60% at 50% 45%, #30407b 0 30%, #121c42 70%);
-    box-shadow: inset 0 0 60px rgba(0,0,0,.35), 0 18px 40px rgba(0,0,0,.4);
-  }
-  .face{
-    position:absolute; inset:3.8%; border-radius:50%;
-    background: radial-gradient(90% 90% at 50% 45%, var(--dial) 0%, #e9eefc 70%, #d8e0fb 100%);
-    box-shadow: inset 0 8px 30px rgba(0,0,0,.12);
-  }
-  .ring{
-    position:absolute; inset:10%; border-radius:50%;
-    border:12px solid rgba(20,35,82,.12);
-  }
-  .hashes{position:absolute; inset:12%; border-radius:50%;}
-  .hashes::before,.hashes::after{
-    content:""; position:absolute; inset:0; border-radius:50%;
-    box-shadow: inset 0 0 0 2px var(--tick);
-  }
+    .needle{
+      position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(0deg); transform-origin:50% 60%;
+      width:42%; height:42%;
+    }
+    .needle .drop{
+      width:100%; height:100%; border-radius:60% 60% 60% 60% / 75% 75% 25% 25%;
+      background: radial-gradient(45% 45% at 38% 38%, #ffdf88, #f7b63d 55%, #f39a1a);
+      box-shadow: 0 6px 16px rgba(0,0,0,.25), inset 0 -4px 10px rgba(0,0,0,.15);
+    }
+    .kaaba{
+      position:absolute; left:50%; top:14%;
+      width:48px; height:48px; transform:translate(-50%, -50%);
+      background: linear-gradient(135deg, #2b2b2b 60%, #ffd23c 60%);
+      border-radius:8px; box-shadow:0 10px 20px rgba(0,0,0,.35);
+    }
+    .message{margin-top:12px; text-align:center; line-height:1.35}
+    .hint{opacity:.9; font-size:14px}
+    .ok{color:#ffd23c; font-weight:700}
 
-  /* деления */
-  .tick{position:absolute; left:50%; top:50%; width:2px; height:12%;
-        background:var(--tick); transform-origin:50% 0%;}
-  .tick.major{width:4px; height:14%; background:#8ea2ff}
-  /* N/E/S/W */
-  .cardinal{position:absolute; inset:0; pointer-events:none}
-  .cardinal span{
-    position:absolute; left:50%; top:50%;
-    transform:translate(-50%,-50%); color:#0a1b4d; font-weight:900; opacity:.8;
-    text-shadow:0 1px 0 #fff8;
-  }
-  .cardinal .N{top:6%; font-size:28px}
-  .cardinal .S{top:94%; font-size:26px}
-  .cardinal .E{left:94%; font-size:26px}
-  .cardinal .W{left:6%; font-size:26px}
-
-  /* стрелка */
-  .needle{position:absolute; left:50%; top:50%;
-          transform:translate(-50%,-50%) rotate(0deg); transform-origin:50% 80%;
-          width:64%; height:64%; pointer-events:none;}
-  .needle .shaft{
-    position:absolute; left:50%; top:8%;
-    transform:translateX(-50%);
-    width:8px; height:60%;
-    background:linear-gradient(180deg, #2c3a86, #172055);
-    border-radius:8px;
-    box-shadow: 0 6px 18px rgba(0,0,0,.25);
-  }
-  .needle .tip{
-    position:absolute; left:50%; top:2%;
-    transform:translateX(-50%);
-    width:0; height:0; border-left:18px solid transparent; border-right:18px solid transparent;
-    border-bottom:28px solid var(--needleTip);
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,.25));
-  }
-  .needle .hub{
-    position:absolute; left:50%; top:76%; transform:translate(-50%,-50%);
-    width:54px; height:54px; border-radius:50%;
-    background: radial-gradient(circle at 35% 35%, #ffe38f 0 40%, #f8b52c 70%);
-    box-shadow: inset 0 -8px 14px rgba(0,0,0,.15), 0 8px 18px rgba(0,0,0,.22);
-    border:3px solid #fff;
-  }
-
-  /* маркер Киблы */
-  .kaaba{
-    position:absolute; left:50%; top:12%;
-    transform:translate(-50%,-50%);
-    width:46px; height:46px; border-radius:10px;
-    background:
-      linear-gradient(135deg, #2b2b2b 63%, #ffd23c 63%) no-repeat,
-      linear-gradient(#111, #333);
-    box-shadow: 0 10px 20px rgba(0,0,0,.35);
-  }
-  .caption{margin-top:8px; text-align:center; line-height:1.35}
-  .hint{font-size:14px; color:var(--muted)}
-  .ok{color:var(--ok); font-weight:800}
-
-  .panel{
-    margin-top:8px; padding:10px 14px; border-radius:12px;
-    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08);
-    font-size:13px; text-align:center; backdrop-filter: blur(6px);
-  }
-  .panel b{color:#ffe38f}
-  footer{margin-top:auto; padding:16px; font-size:12px; color:var(--muted); text-align:center}
-</style>
+    footer{margin-top:auto; padding:16px; font-size:12px; opacity:.8; text-align:center}
+  </style>
 </head>
 <body>
   <header>
@@ -126,93 +64,133 @@
     <div id="status"></div>
   </header>
 
-  <div class="dial-wrap" aria-label="Компас">
-    <div class="rim"></div>
-    <div class="face"></div>
-    <div class="ring"></div>
-
-    <!-- 36 тонких делений каждые 10° + 4 толстых на NSEW -->
-    <div class="hashes" id="hashes"></div>
-
-    <!-- Подписи сторон света -->
+  <div class="dial-wrap" aria-hidden="true">
+    <div class="dial"></div>
+    <div class="ticks"></div>
     <div class="cardinal">
-      <span class="N">N</span>
-      <span class="E">E</span>
-      <span class="S">S</span>
-      <span class="W">W</span>
+      <span class="N">N</span><span class="E">E</span><span class="S">S</span><span class="W">W</span>
     </div>
-
-    <!-- Игла -->
-    <div id="needle" class="needle" aria-hidden="true">
-      <div class="tip"></div>
-      <div class="shaft"></div>
-      <div class="hub"></div>
-    </div>
-
-    <!-- Маркер: направление на Киблу (по циферблату вверх) -->
+    <div id="needle" class="needle"><div class="drop"></div></div>
     <div class="kaaba" title="Кибла"></div>
   </div>
 
-  <div class="caption">
-    <div id="msgMain">Нажмите <b>Start</b> и разрешите доступ к геопозиции и ориентации</div>
+  <div class="message">
+    <div id="msgMain">Нажмите <b>Start</b> и разрешите доступ к геопозиции</div>
     <div class="hint">Держите устройство параллельно земле</div>
   </div>
 
-  <div class="panel" id="readout" hidden>
-    Азимут на Киблу: <b id="brng">—°</b> • Ваш курс: <b id="head">—°</b>
-  </div>
-
-  <footer>Если стрелка не двигается — у устройства нет компаса или браузер запретил датчики. На iOS подтвердите «Доступ к движению и ориентации».</footer>
+  <footer>Если стрелка не двигается — у устройства нет компаса или он заблокирован браузером.</footer>
 
 <script>
 (function () {
   const EL = s => document.querySelector(s);
   const statusEl = EL('#status');
-  const msgMain  = EL('#msgMain');
+  const needle = EL('#needle');
+  const msgMain = EL('#msgMain');
   const startBtn = EL('#startBtn');
-  const needle   = EL('#needle');
-  const readout  = EL('#readout');
-  const brngEl   = EL('#brng');
-  const headEl   = EL('#head');
-
-  // Сгенерировать деления
-  const hashes = document.getElementById('hashes');
-  for (let i=0;i<36;i++){ // каждые 10°
-    const d = document.createElement('div');
-    d.className = 'tick';
-    if (i%9===0) d.classList.add('major'); // 0,90,180,270
-    d.style.transform = `translate(-50%,-50%) rotate(${i*10}deg) translateY(-43%)`;
-    hashes.appendChild(d);
-  }
 
   // Координаты Каабы
   const KAABA = { lat: 21.422487, lon: 39.826206 };
 
   let user = { lat: null, lon: null };
-  let qiblaBearing = null;  // истинный азимут на Киблу (0..360)
-  let lastHeading = null;   // курс устройства (0..360)
+  let qiblaBearing = null;   // истинный азимут на Киблу (0..360)
+  let lastHeading = 0;       // курс устройства (магнитный/истинный в зависимости от браузера)
 
+  // Вспомогательные функции
   const toRad = d => d * Math.PI / 180;
   const toDeg = r => r * 180 / Math.PI;
-  const norm  = a => (a%360+360)%360;
-
   function bearingTo(lat1, lon1, lat2, lon2) {
-    const φ1 = toRad(lat1), φ2 = toRad(lat2), Δλ = toRad(lon2 - lon1);
+    // формула начального азимута
+    const φ1 = toRad(lat1), φ2 = toRad(lat2);
+    const Δλ = toRad(lon2 - lon1);
     const y = Math.sin(Δλ) * Math.cos(φ2);
     const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
-    return norm(toDeg(Math.atan2(y, x)));
+    let brng = (toDeg(Math.atan2(y, x)) + 360) % 360;
+    return brng;
+  }
+  function normalizeDeg(a){ a%=360; if(a<0) a+=360; return a; }
+
+  // Повернуть стрелку так, чтобы она указывала на Киблу
+  function updateNeedle() {
+    if (qiblaBearing==null || lastHeading==null) return;
+    // угол, на который нужно повернуть стрелку относительно устройства
+    const rel = normalizeDeg(qiblaBearing - lastHeading);
+    needle.style.transform = `translate(-50%,-50%) rotate(${rel}deg)`;
+    const diff = Math.min(Math.abs(rel), 360-Math.abs(rel));
+    if (diff < 8) {
+      msgMain.innerHTML = '<span class="ok">Вы нашли Киблу</span><br/><span style="opacity:.9">You\'ve found Qibla</span>';
+    } else if (diff < 20) {
+      msgMain.innerHTML = 'Почти у цели<br/><span style="opacity:.9">Almost there</span>';
+    } else {
+      msgMain.textContent = 'Вращайте устройство, пока стрелка не совпадёт с меткой';
+    }
   }
 
-  function updateNeedle(){
-    if (qiblaBearing==null || lastHeading==null) return;
-    const rel = norm(qiblaBearing - lastHeading); // сколько повернуть иглу
-    needle.style.transform = `translate(-50%,-50%) rotate(${rel}deg)`;
-    brngEl.textContent = `${Math.round(qiblaBearing)}°`;
-    headEl.textContent = `${Math.round(lastHeading)}°`;
-    readout.hidden = false;
+  // Получение курса устройства
+  function subscribeOrientation() {
+    function onOrient(e) {
+      // Android/Chrome: e.webkitCompassHeading (0..360, 0 = север)
+      // iOS/Safari: e.alpha (0..360), направление относительно устройства
+      let heading = null;
+      if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading;
+      else if (typeof e.alpha === 'number') heading = 360 - e.alpha; // приблизительно
+      if (heading != null) {
+        lastHeading = normalizeDeg(heading);
+        updateNeedle();
+      }
+    }
 
-    const diff = Math.min(rel, 360-rel);
-    if (diff < 8) {
-      msgMain.innerHTML = '<span class="ok">Вы нашли Киблу</span><br/><span
+    // iOS требует явного разрешения
+    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(state => {
+          if (state === 'granted') {
+            window.addEventListener('deviceorientation', onOrient, true);
+            statusEl.textContent = 'Датчик ориентации: OK';
+          } else {
+            statusEl.textContent = 'Доступ к ориентации отклонён';
+          }
+        })
+        .catch(err => { statusEl.textContent = 'Ошибка ориентации: ' + err; });
+    } else if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', onOrient, true);
+      statusEl.textContent = 'Датчик ориентации: OK';
+    } else {
+      statusEl.textContent = 'Датчик ориентации недоступен';
+    }
+  }
+
+  // Геолокация
+  function askGeolocation() {
+    if (!navigator.geolocation) {
+      statusEl.textContent = 'Геолокация недоступна в браузере';
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        user.lat = pos.coords.latitude;
+        user.lon = pos.coords.longitude;
+        qiblaBearing = bearingTo(user.lat, user.lon, KAABA.lat, KAABA.lon);
+        statusEl.textContent = `Гео: ${user.lat.toFixed(4)}, ${user.lon.toFixed(4)} • Азимут на Киблу: ${Math.round(qiblaBearing)}°`;
+        updateNeedle();
+      },
+      err => {
+        statusEl.textContent = 'Не удалось получить геопозицию: ' + err.message;
+      },
+      { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+    );
+  }
+
+  startBtn.addEventListener('click', () => {
+    startBtn.disabled = true;
+    startBtn.textContent = '…';
+    msgMain.textContent = 'Запрашиваю разрешения…';
+    askGeolocation();
+    subscribeOrientation();
+  });
+})();
+</script>
+</body>
+</html>
 
 
