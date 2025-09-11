@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Компас Киблы</title>
+  <style>
+    :root { --bg1:#2e3a87; --bg2:#7386ff; --accent:#f9c846; --text:#ffffff; }
+    html,body{height:100%;margin:0}
+    body{
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;
+      background: radial-gradient(120% 120% at 50% -10%, var(--bg2), var(--bg1));
+      color: var(--text); display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    }
+    header{padding:18px 16px 8px; width:100%; max-width:520px; text-align:center}
+    h1{font-size:20px; margin:0 0 8px}
+    #startBtn{
+      border:0; background:linear-gradient(180deg,#ffd86b,#f2b22c);
+      padding:12px 28px; border-radius:999px; font-weight:700; font-size:18px; color:#3a2a00;
+      box-shadow:0 10px 18px rgba(0,0,0,.25); cursor:pointer;
+    }
+    #status{font-size:14px; opacity:.9; margin-top:10px; min-height:1.2em}
+
+    .dial-wrap{position:relative; margin:28px auto; width:min(86vw,420px); aspect-ratio:1; }
+    .dial{
+      position:absolute; inset:0; border-radius:50%; background: radial-gradient(60% 60% at 50% 45%, #ffffff, #e9eefb 70%, #c8d1f7 71%, #142352 72%);
+      box-shadow: inset 0 0 40px rgba(0,0,0,.2), 0 18px 40px rgba(0,0,0,.35);
+    }
+    .ticks{position:absolute; inset:7% 7%; border-radius:50%; border:10px solid rgba(20,35,82,.12);}
+    .cardinal{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:90%; height:90%;}
+    .cardinal span{
+      position:absolute; font-weight:700; color:#0a1b4d; opacity:.65;
+      transform:translate(-50%,-50%);
+    }
+    .cardinal .N{left:50%; top:2.5%} .S{left:50%; top:97.5%}
+    .cardinal .E{left:97.5%; top:50%} .W{left:2.5%; top:50%}
+
+    .needle{
+      position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(0deg); transform-origin:50% 60%;
+      width:42%; height:42%;
+    }
+    .needle .drop{
+      width:100%; height:100%; border-radius:60% 60% 60% 60% / 75% 75% 25% 25%;
+      background: radial-gradient(45% 45% at 38% 38%, #ffdf88, #f7b63d 55%, #f39a1a);
+      box-shadow: 0 6px 16px rgba(0,0,0,.25), inset 0 -4px 10px rgba(0,0,0,.15);
+    }
+    .kaaba{
+      position:absolute; left:50%; top:14%;
+      width:48px; height:48px; transform:translate(-50%, -50%);
+      background: linear-gradient(135deg, #2b2b2b 60%, #ffd23c 60%);
+      border-radius:8px; box-shadow:0 10px 20px rgba(0,0,0,.35);
+    }
+    .message{margin-top:12px; text-align:center; line-height:1.35}
+    .hint{opacity:.9; font-size:14px}
+    .ok{color:#ffd23c; font-weight:700}
+
+    footer{margin-top:auto; padding:16px; font-size:12px; opacity:.8; text-align:center}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Компас Киблы</h1>
+    <button id="startBtn">Start</button>
+    <div id="status"></div>
+  </header>
+
+  <div class="dial-wrap" aria-hidden="true">
+    <div class="dial"></div>
+    <div class="ticks"></div>
+    <div class="cardinal">
+      <span class="N">N</span><span class="E">E</span><span class="S">S</span><span class="W">W</span>
+    </div>
+    <div id="needle" class="needle"><div class="drop"></div></div>
+    <div class="kaaba" title="Кибла"></div>
+  </div>
+
+  <div class="message">
+    <div id="msgMain">Нажмите <b>Start</b> и разрешите доступ к геопозиции</div>
+    <div class="hint">Держите устройство параллельно земле</div>
+  </div>
+
+  <footer>Если стрелка не двигается — у устройства нет компаса или он заблокирован браузером.</footer>
+
+<script>
+(function () {
+  const EL = s => document.querySelector(s);
+  const statusEl = EL('#status');
+  const needle = EL('#needle');
+  const msgMain = EL('#msgMain');
+  const startBtn = EL('#startBtn');
+
+  // Координаты Каабы
+  const KAABA = { lat: 21.422487, lon: 39.826206 };
+
+  let user = { lat: null, lon: null };
+  let qiblaBearing = null;   // истинный азимут на Киблу (0..360)
+  let lastHeading = 0;       // курс устройства (магнитный/истинный в зависимости от браузера)
+
+  // Вспомогательные функции
+  const toRad = d => d * Math.PI / 180;
+  const toDeg = r => r * 180 / Math.PI;
+  function bearingTo(lat1, lon1, lat2, lon2) {
+    // формула начального азимута
+    const φ1 = toRad(lat1), φ2 = toRad(lat2);
+    const Δλ = toRad(lon2 - lon1);
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+    let brng = (toDeg(Math.atan2(y, x)) + 360) % 360;
+    return brng;
+  }
+  function normalizeDeg(a){ a%=360; if(a<0) a+=360; return a; }
+
+  // Повернуть стрелку так, чтобы она указывала на Киблу
+  function updateNeedle() {
+    if (qiblaBearing==null || lastHeading==null) return;
+    // угол, на который нужно повернуть стрелку относительно устройства
+    const rel = normalizeDeg(qiblaBearing - lastHeading);
+    needle.style.transform = `translate(-50%,-50%) rotate(${rel}deg)`;
+    const diff = Math.min(Math.abs(rel), 360-Math.abs(rel));
+    if (diff < 8) {
+      msgMain.innerHTML = '<span class="ok">Вы нашли Киблу</span><br/><span style="opacity:.9">You\'ve found Qibla</span>';
+    } else if (diff < 20) {
+      msgMain.innerHTML = 'Почти у цели<br/><span style="opacity:.9">Almost there</span>';
+    } else {
+      msgMain.textContent = 'Вращайте устройство, пока стрелка не совпадёт с меткой';
+    }
+  }
+
+  // Получение курса устройства
+  function subscribeOrientation() {
+    function onOrient(e) {
+      // Android/Chrome: e.webkitCompassHeading (0..360, 0 = север)
+      // iOS/Safari: e.alpha (0..360), направление относительно устройства
+      let heading = null;
+      if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading;
+      else if (typeof e.alpha === 'number') heading = 360 - e.alpha; // приблизительно
+      if (heading != null) {
+        lastHeading = normalizeDeg(heading);
+        updateNeedle();
+      }
+    }
+
+    // iOS требует явного разрешения
+    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(state => {
+          if (state === 'granted') {
+            window.addEventListener('deviceorientation', onOrient, true);
+            statusEl.textContent = 'Датчик ориентации: OK';
+          } else {
+            statusEl.textContent = 'Доступ к ориентации отклонён';
+          }
+        })
+        .catch(err => { statusEl.textContent = 'Ошибка ориентации: ' + err; });
+    } else if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', onOrient, true);
+      statusEl.textContent = 'Датчик ориентации: OK';
+    } else {
+      statusEl.textContent = 'Датчик ориентации недоступен';
+    }
+  }
+
+  // Геолокация
+  function askGeolocation() {
+    if (!navigator.geolocation) {
+      statusEl.textContent = 'Геолокация недоступна в браузере';
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        user.lat = pos.coords.latitude;
+        user.lon = pos.coords.longitude;
+        qiblaBearing = bearingTo(user.lat, user.lon, KAABA.lat, KAABA.lon);
+        statusEl.textContent = `Гео: ${user.lat.toFixed(4)}, ${user.lon.toFixed(4)} • Азимут на Киблу: ${Math.round(qiblaBearing)}°`;
+        updateNeedle();
+      },
+      err => {
+        statusEl.textContent = 'Не удалось получить геопозицию: ' + err.message;
+      },
+      { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+    );
+  }
+
+  startBtn.addEventListener('click', () => {
+    startBtn.disabled = true;
+    startBtn.textContent = '…';
+    msgMain.textContent = 'Запрашиваю разрешения…';
+    askGeolocation();
+    subscribeOrientation();
+  });
+})();
+</script>
+</body>
+</html>
+
