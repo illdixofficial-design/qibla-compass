@@ -6,7 +6,7 @@
 <title>Компас Киблы</title>
 <style>
   :root{
-    /* Палитра из первого варианта */
+    /* палитра из 1-го варианта */
     --bg1:#2e3a87; --bg2:#7386ff;
     --dial:#f7fbff; --ring:#142352; --tick:#cfd6ff;
     --text:#ffffff; --muted:#c7d0ff;
@@ -35,7 +35,8 @@
   #status{margin-top:10px; font-size:13px; color:var(--muted); min-height:1.2em}
 
   .dial-wrap{position:relative; width:min(90vw,520px); aspect-ratio:1; margin:16px auto 6px}
-  /* Слои циферблата */
+
+  /* слои */
   .rim{
     position:absolute; inset:0; border-radius:50%;
     background: radial-gradient(60% 60% at 50% 45%, #3a4aa1 0 30%, #1e295c 70%);
@@ -54,7 +55,7 @@
     z-index:2;
   }
 
-  /* Деления */
+  /* деления */
   .hashes{position:absolute; inset:12.5%; border-radius:50%; z-index:3; pointer-events:none;}
   .tick{
     position:absolute; left:50%; top:50%;
@@ -65,8 +66,8 @@
   }
   .tick.major{width:4px; height:15%; background:#9fb0ff}
 
-  /* NSEW — над всем, с «плашкой» под каждой буквой, чтобы кольца не заезжали визуально */
-  .cardinals{position:absolute; inset:0; z-index:4; pointer-events:none;}
+  /* NSEW — над всем и отдельно от кольца, чтобы не перекрывались */
+  .cardinals{position:absolute; inset:0; z-index:5; pointer-events:none;}
   .cardinals .lbl{
     position:absolute; left:50%; top:50%;
     transform:translate(-50%,-50%);
@@ -82,44 +83,52 @@
   .cardinals .E{left:94.5%; font-size:18px}
   .cardinals .W{left:5.5%;  font-size:18px}
 
-  /* Игла */
-  .needle{position:absolute; left:50%; top:50%;
-          transform:translate(-50%,-50%) rotate(0deg);
-          transform-origin:50% 80%;
-          width:64%; height:64%; pointer-events:none; z-index:5;}
-  .needle .tip{
-    position:absolute; left:50%; top:2%;
+  /* игла — вращение строго вокруг геометрического центра циферблата */
+  .needle{
+    position:absolute; left:50%; top:50%;
+    width:80%; height:80%;
+    transform:translate(-50%,-50%) rotate(0deg);
+    transform-origin:50% 50%;  /* << центр */
+    z-index:6; pointer-events:none;
+  }
+  .needle .arrow{
+    /* сам «рисунок» иглы расположен от центра кверху */
+    position:absolute; left:50%; top:10%;
     transform:translateX(-50%);
-    width:0; height:0; border-left:18px solid transparent; border-right:18px solid transparent;
-    border-bottom:30px solid var(--needleTip);
+    width:0; height:0;
+    border-left:20px solid transparent; border-right:20px solid transparent;
+    border-bottom:34px solid var(--needleTip);
     filter: drop-shadow(0 4px 6px rgba(0,0,0,.25));
   }
   .needle .shaft{
-    position:absolute; left:50%; top:8%;
+    position:absolute; left:50%; top:14%;
     transform:translateX(-50%);
-    width:10px; height:60%;
+    width:10px; height:42%;
     background:linear-gradient(180deg, #2c3a86, #172055);
     border-radius:10px;
     box-shadow: 0 6px 18px rgba(0,0,0,.25);
   }
-  .needle .hub{
-    position:absolute; left:50%; top:76%; transform:translate(-50%,-50%);
-    width:56px; height:56px; border-radius:50%;
+
+  /* центральная «шайба» — отдельным слоем РОВНО в центре */
+  .hub-center{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:58px; height:58px; border-radius:50%;
     background: radial-gradient(circle at 35% 35%, #ffe38f 0 40%, #f8b52c 70%);
     box-shadow: inset 0 -8px 14px rgba(0,0,0,.15), 0 8px 18px rgba(0,0,0,.22);
     border:3px solid #fff;
+    z-index:7; pointer-events:none;
   }
 
-  /* Маркер Каабы */
+  /* метка Киблы — меньше и «под» S (чуть ближе к центру, чтобы не перекрывать) */
   .kaaba{
-    position:absolute; left:50%; top:12%;
+    position:absolute; left:50%; top:86%; /* под югом */
     transform:translate(-50%,-50%);
-    width:48px; height:48px; border-radius:10px;
+    width:38px; height:38px; border-radius:9px;
     background:
       linear-gradient(135deg, #2b2b2b 63%, #ffd23c 63%) no-repeat,
       linear-gradient(#111, #333);
     box-shadow: 0 10px 20px rgba(0,0,0,.35);
-    z-index:4;
+    z-index:4; /* ниже подписей S/E/W/N */
   }
 
   .caption{margin-top:8px; text-align:center; line-height:1.35}
@@ -157,12 +166,16 @@
       <div class="lbl W">W</div>
     </div>
 
+    <!-- игла -->
     <div id="needle" class="needle" aria-hidden="true">
-      <div class="tip"></div>
+      <div class="arrow"></div>
       <div class="shaft"></div>
-      <div class="hub"></div>
     </div>
 
+    <!-- центральный хаб — отдельный слой РОВНО в центре -->
+    <div class="hub-center" aria-hidden="true"></div>
+
+    <!-- кибла «под S» -->
     <div class="kaaba" title="Кибла"></div>
   </div>
 
@@ -188,17 +201,17 @@
   const brngEl   = EL('#brng');
   const headEl   = EL('#head');
 
-  // Сгенерировать деления
+  // деления каждые 10°, утолщаем на 0/90/180/270
   const hashes = document.getElementById('hashes');
-  for (let i=0;i<36;i++){ // каждые 10°
+  for (let i=0;i<36;i++){
     const d = document.createElement('div');
     d.className = 'tick';
-    if (i%9===0) d.classList.add('major'); // 0,90,180,270
+    if (i%9===0) d.classList.add('major');
     d.style.transform = `translate(-50%,-50%) rotate(${i*10}deg) translateY(-43%)`;
     hashes.appendChild(d);
   }
 
-  // Координаты Каабы
+  // координаты Каабы
   const KAABA = { lat: 21.422487, lon: 39.826206 };
 
   let user = { lat: null, lon: null };
@@ -218,7 +231,12 @@
 
   function updateNeedle(){
     if (qiblaBearing==null || lastHeading==null) return;
-    const rel = norm(qiblaBearing - lastHeading); // сколько повернуть иглу
+
+    /* ВАЖНО: инверсию поправили — теперь стрелка «идёт» в ту же сторону,
+       что и ваше вращение телефона.
+       Раньше было (qibla - heading), теперь делаем (heading - qibla). */
+    const rel = norm(lastHeading - qiblaBearing);
+
     needle.style.transform = `translate(-50%,-50%) rotate(${rel}deg)`;
     brngEl.textContent = `${Math.round(qiblaBearing)}°`;
     headEl.textContent = `${Math.round(lastHeading)}°`;
@@ -234,7 +252,7 @@
     }
   }
 
-  // Геолокация
+  // геолокация
   function askGeolocation() {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
@@ -259,17 +277,17 @@
     });
   }
 
-  // Датчики ориентации
+  // датчики ориентации
   function subscribeOrientation() {
     return new Promise((resolve) => {
       function onOrient(e) {
         let heading = null;
         if (typeof e.webkitCompassHeading === 'number') {
-          // iOS Safari / WebView отдаёт истинный курс
+          // iOS Safari/WebView — истинный курс, 0 = север, возрастает по часовой
           heading = e.webkitCompassHeading;
         } else if (typeof e.alpha === 'number') {
-          // Android Chrome: приблизительно => обратим, чтобы 0 = север
-          heading = 360 - e.alpha;
+          // Android Chrome — используем как есть (без "360 - alpha"), чтобы убрать инверсию
+          heading = e.alpha;
         }
         if (heading != null) {
           lastHeading = norm(heading);
@@ -278,7 +296,6 @@
       }
 
       if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS: запрашиваем явное разрешение ТОЛЬКО по клику
         DeviceOrientationEvent.requestPermission()
           .then(state => {
             if (state === 'granted') {
@@ -302,7 +319,7 @@
     });
   }
 
-  // Кнопка Start — строго по пользовательскому клику
+  // Start
   startBtn.addEventListener('click', async () => {
     startBtn.disabled = true;
     startBtn.textContent = '…';
