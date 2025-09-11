@@ -6,11 +6,14 @@
 <title>Компас Киблы</title>
 <style>
   :root{
-    --bg1:#2e3a87; --bg2:#7386ff;      /* палитра из 1-го варианта */
+    /* палитра из первого варианта */
+    --bg1:#2e3a87; --bg2:#7386ff;
     --dial:#f7fbff; --ring:#142352; --tick:#cfd6ff;
     --text:#ffffff; --muted:#c7d0ff;
     --accent:#f9c846; --accent2:#f2b22c; --ok:#00d08a;
-    --needleTip:#ffcc33;
+
+    /* золото центра/стрелки */
+    --gold1:#ffe38f; --gold2:#f8b52c; --gold3:#ffcc33;
   }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
@@ -65,7 +68,7 @@
   }
   .tick.major{width:4px; height:15%; background:#9fb0ff}
 
-  /* NSEW — отдельный слой, чтобы ничего не заезжало */
+  /* NSEW — отдельный слой, чтобы ничего не перекрывалось */
   .cardinals{position:absolute; inset:0; z-index:5; pointer-events:none;}
   .cardinals .lbl{
     position:absolute; left:50%; top:50%;
@@ -82,7 +85,7 @@
   .cardinals .E{left:94.5%; font-size:18px}
   .cardinals .W{left:5.5%;  font-size:18px}
 
-  /* игла — центр вращения ровно в центре */
+  /* игла: центр вращения ровно по центру; цвет = как у центрального круга (золото) */
   .needle{
     position:absolute; left:50%; top:50%;
     width:80%; height:80%;
@@ -91,19 +94,19 @@
     z-index:6; pointer-events:none;
   }
   .needle .arrow{
-    position:absolute; left:50%; top:10%;
+    position:absolute; left:50%; top:8%;
     transform:translateX(-50%);
     width:0; height:0;
-    border-left:20px solid transparent; border-right:20px solid transparent;
-    border-bottom:34px solid var(--needleTip);
+    border-left:22px solid transparent; border-right:22px solid transparent;
+    border-bottom:36px solid var(--gold3); /* остриё — золото */
     filter: drop-shadow(0 4px 6px rgba(0,0,0,.25));
   }
   .needle .shaft{
-    position:absolute; left:50%; top:14%;
+    position:absolute; left:50%; top:12%;
     transform:translateX(-50%);
-    width:10px; height:42%;
-    background:linear-gradient(180deg, #2c3a86, #172055);
-    border-radius:10px;
+    width:12px; height:46%;
+    background:linear-gradient(180deg, var(--gold1), var(--gold2)); /* тело — золото */
+    border-radius:12px;
     box-shadow: 0 6px 18px rgba(0,0,0,.25);
   }
 
@@ -111,7 +114,7 @@
   .hub-center{
     position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
     width:58px; height:58px; border-radius:50%;
-    background: radial-gradient(circle at 35% 35%, #ffe38f 0 40%, #f8b52c 70%);
+    background: radial-gradient(circle at 35% 35%, var(--gold1) 0 40%, var(--gold2) 70%);
     box-shadow: inset 0 -8px 14px rgba(0,0,0,.15), 0 8px 18px rgba(0,0,0,.22);
     border:3px solid #fff;
     z-index:7; pointer-events:none;
@@ -121,7 +124,7 @@
   .kaaba{
     position:absolute; left:50%; top:14%;
     transform:translate(-50%,-50%);
-    width:34px; height:34px; border-radius:8px;
+    width:32px; height:32px; border-radius:8px;
     background:
       linear-gradient(135deg, #2b2b2b 63%, #ffd23c 63%) no-repeat,
       linear-gradient(#111, #333);
@@ -139,7 +142,7 @@
     font-size:13px; text-align:center; backdrop-filter: blur(6px);
     max-width:min(92vw,560px);
   }
-  .panel b{color:#ffe38f}
+  .panel b{color:var(--gold1)}
   footer{margin-top:auto; padding:16px; font-size:12px; color:var(--muted); text-align:center}
 </style>
 </head>
@@ -164,14 +167,16 @@
       <div class="lbl W">W</div>
     </div>
 
+    <!-- игла -->
     <div id="needle" class="needle" aria-hidden="true">
       <div class="arrow"></div>
       <div class="shaft"></div>
     </div>
 
+    <!-- центральный хаб — строго в центре -->
     <div class="hub-center" aria-hidden="true"></div>
 
-    <!-- Кибла теперь под N -->
+    <!-- Кибла под N -->
     <div class="kaaba" title="Кибла"></div>
   </div>
 
@@ -197,7 +202,7 @@
   const brngEl   = EL('#brng');
   const headEl   = EL('#head');
 
-  // деления каждые 10°, усиленные на 0/90/180/270
+  // деления каждые 10°, утолщённые на 0/90/180/270
   const hashes = document.getElementById('hashes');
   for (let i=0;i<36;i++){
     const d = document.createElement('div');
@@ -213,10 +218,10 @@
   let user = { lat: null, lon: null };
   let qiblaBearing = null;  // истинный азимут на Киблу (0..360)
   let lastHeading = null;   // курс устройства (0..360)
+  const norm  = a => (a%360+360)%360;
 
   const toRad = d => d * Math.PI / 180;
   const toDeg = r => r * 180 / Math.PI;
-  const norm  = a => (a%360+360)%360;
 
   function bearingTo(lat1, lon1, lat2, lon2) {
     const φ1 = toRad(lat1), φ2 = toRad(lat2), Δλ = toRad(lon2 - lon1);
@@ -225,14 +230,19 @@
     return norm(toDeg(Math.atan2(y, x)));
   }
 
+  /* Визуальная инверсия:
+     На некоторых Android WebView alpha даёт «зеркальность».
+     Этот флаг делает движение стрелки синхронным с поворотом телефона. */
+  const INVERT_VISUAL = true;
+
   function updateNeedle(){
     if (qiblaBearing==null || lastHeading==null) return;
 
-    /* Правильное направление:
-       - на Android используем heading = 360 - alpha (ниже),
-       - на iOS webkitCompassHeading уже корректный.
-       Итоговый поворот стрелки: (qibla - heading). */
-    const rel = norm(qiblaBearing - lastHeading);
+    // базовая относительная ориентация (математически правильная)
+    let rel = norm(qiblaBearing - lastHeading);
+
+    // визуальная синхронизация по требованию
+    if (INVERT_VISUAL) rel = norm(-rel);
 
     needle.style.transform = `translate(-50%,-50%) rotate(${rel}deg)`;
     brngEl.textContent = `${Math.round(qiblaBearing)}°`;
@@ -283,7 +293,7 @@
           // iOS Safari/WebView — истинный курс (0 = север, растёт по часовой)
           heading = e.webkitCompassHeading;
         } else if (typeof e.alpha === 'number') {
-          // Android Chrome — используем классическую формулу (инверсия устранена):
+          // Android Chrome/WebView — классическая формула для истинного курса:
           heading = 360 - e.alpha;
         }
         if (heading != null) {
