@@ -6,10 +6,13 @@
 <title>Компас Киблы</title>
 <style>
   :root{
+    /* палитра из первого варианта */
     --bg1:#2e3a87; --bg2:#7386ff;
     --dial:#f7fbff; --ring:#142352; --tick:#cfd6ff;
     --text:#ffffff; --muted:#c7d0ff;
     --accent:#f9c846; --accent2:#f2b22c; --ok:#00d08a;
+
+    /* золото центра/стрелки */
     --gold1:#ffe38f; --gold2:#f8b52c; --gold3:#ffcc33;
   }
   *{box-sizing:border-box}
@@ -20,41 +23,61 @@
     background: radial-gradient(120% 120% at 50% -10%, var(--bg2), var(--bg1));
     display:flex; flex-direction:column; align-items:center;
   }
+
   header{width:100%;max-width:560px; text-align:center; padding:18px 16px 8px}
   h1{margin:0 0 10px; font-size:22px; letter-spacing:.2px}
-  .btn{
+  #startBtn{
     border:0; cursor:pointer; outline:0;
     padding:12px 28px; border-radius:999px;
     font-weight:800; font-size:18px; color:#3a2a00;
     background:linear-gradient(180deg, var(--accent) 0%, var(--accent2) 100%);
     box-shadow:0 10px 22px rgba(0,0,0,.32);
   }
-  .btn[disabled]{opacity:.7; cursor:default}
-  #startBtn{display:inline-block}
-  #enableMotionBtn{display:none; margin-left:8px}
+  #startBtn[disabled]{opacity:.7; cursor:default}
   #status{margin-top:10px; font-size:13px; color:var(--muted); min-height:1.2em}
 
   .dial-wrap{position:relative; width:min(90vw,520px); aspect-ratio:1; margin:16px auto 6px}
-  .rim{position:absolute; inset:0; border-radius:50%;
-    background: radial-gradient(60% 60% at 50% 45%, #3a4aa1 0 30%, #1e295c 70%);
-    box-shadow: inset 0 0 60px rgba(0,0,0,.35), 0 18px 40px rgba(0,0,0,.38); z-index:1;}
-  .face{position:absolute; inset:4.5%; border-radius:50%;
-    background: radial-gradient(90% 90% at 50% 45%, var(--dial) 0%, #e9eefc 70%, #d8e0fb 100%);
-    box-shadow: inset 0 8px 30px rgba(0,0,0,.12); z-index:2;}
-  .ring{position:absolute; inset:11.5%; border-radius:50%;
-    border:12px solid rgba(20,35,82,.12); z-index:2;}
 
+  /* слои циферблата */
+  .rim{
+    position:absolute; inset:0; border-radius:50%;
+    background: radial-gradient(60% 60% at 50% 45%, #3a4aa1 0 30%, #1e295c 70%);
+    box-shadow: inset 0 0 60px rgba(0,0,0,.35), 0 18px 40px rgba(0,0,0,.38);
+    z-index:1;
+  }
+  .face{
+    position:absolute; inset:4.5%; border-radius:50%;
+    background: radial-gradient(90% 90% at 50% 45%, var(--dial) 0%, #e9eefc 70%, #d8e0fb 100%);
+    box-shadow: inset 0 8px 30px rgba(0,0,0,.12);
+    z-index:2;
+  }
+  .ring{
+    position:absolute; inset:11.5%; border-radius:50%;
+    border:12px solid rgba(20,35,82,.12);
+    z-index:2;
+  }
+
+  /* деления */
   .hashes{position:absolute; inset:12.5%; border-radius:50%; z-index:3; pointer-events:none;}
-  .tick{position:absolute; left:50%; top:50%; width:2px; height:13%;
-    background:var(--tick); transform-origin:50% 0%; opacity:.95;}
+  .tick{
+    position:absolute; left:50%; top:50%;
+    width:2px; height:13%;
+    background:var(--tick);
+    transform-origin:50% 0%;
+    opacity:.95;
+  }
   .tick.major{width:4px; height:15%; background:#9fb0ff}
 
+  /* NSEW — отдельный слой, чтобы ничего не перекрывалось */
   .cardinals{position:absolute; inset:0; z-index:5; pointer-events:none;}
   .cardinals .lbl{
-    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    font-weight:900; letter-spacing:.5px; color:#0a1b4d;
+    position:absolute; left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    font-weight:900; letter-spacing:.5px;
+    color:#0a1b4d;
     text-shadow:0 1px 0 #fff8, 0 0 12px #fff8;
-    padding:4px 8px; border-radius:10px; background:rgba(255,255,255,.65);
+    padding:4px 8px; border-radius:10px;
+    background:rgba(255,255,255,.65);
     border:1px solid rgba(14,24,60,.1);
   }
   .cardinals .N{top:5.5%;  font-size:20px}
@@ -62,32 +85,51 @@
   .cardinals .E{left:94.5%; font-size:18px}
   .cardinals .W{left:5.5%;  font-size:18px}
 
-  .needle{position:absolute; left:50%; top:50%; width:80%; height:80%;
-    transform:translate(-50%,-50%) rotate(0deg); transform-origin:50% 50%;
-    z-index:6; pointer-events:none;}
+  /* игла: центр вращения ровно по центру; цвет = как у центрального круга (золото) */
+  .needle{
+    position:absolute; left:50%; top:50%;
+    width:80%; height:80%;
+    transform:translate(-50%,-50%) rotate(0deg);
+    transform-origin:50% 50%;
+    z-index:6; pointer-events:none;
+  }
   .needle .arrow{
-    position:absolute; left:50%; top:8%; transform:translateX(-50%);
-    width:0; height:0; border-left:22px solid transparent; border-right:22px solid transparent;
-    border-bottom:36px solid var(--gold3); filter: drop-shadow(0 4px 6px rgba(0,0,0,.25));
+    position:absolute; left:50%; top:8%;
+    transform:translateX(-50%);
+    width:0; height:0;
+    border-left:22px solid transparent; border-right:22px solid transparent;
+    border-bottom:36px solid var(--gold3); /* остриё — золото */
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,.25));
   }
   .needle .shaft{
-    position:absolute; left:50%; top:12%; transform:translateX(-50%);
-    width:12px; height:46%; background:linear-gradient(180deg, var(--gold1), var(--gold2));
-    border-radius:12px; box-shadow: 0 6px 18px rgba(0,0,0,.25);
+    position:absolute; left:50%; top:12%;
+    transform:translateX(-50%);
+    width:12px; height:46%;
+    background:linear-gradient(180deg, var(--gold1), var(--gold2)); /* тело — золото */
+    border-radius:12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.25);
   }
+
+  /* центральный хаб — строго по центру */
   .hub-center{
     position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
     width:58px; height:58px; border-radius:50%;
     background: radial-gradient(circle at 35% 35%, var(--gold1) 0 40%, var(--gold2) 70%);
     box-shadow: inset 0 -8px 14px rgba(0,0,0,.15), 0 8px 18px rgba(0,0,0,.22);
-    border:3px solid #fff; z-index:7; pointer-events:none;
+    border:3px solid #fff;
+    z-index:7; pointer-events:none;
   }
+
+  /* метка Киблы — под N (сверху), меньше и не перекрывает букву */
   .kaaba{
     position:absolute; left:50%; top:14%;
     transform:translate(-50%,-50%);
     width:32px; height:32px; border-radius:8px;
-    background: linear-gradient(135deg, #2b2b2b 63%, #ffd23c 63%) no-repeat, linear-gradient(#111, #333);
-    box-shadow: 0 10px 20px rgba(0,0,0,.35); z-index:4;
+    background:
+      linear-gradient(135deg, #2b2b2b 63%, #ffd23c 63%) no-repeat,
+      linear-gradient(#111, #333);
+    box-shadow: 0 10px 20px rgba(0,0,0,.35);
+    z-index:4; /* ниже подписей N/E/S/W */
   }
 
   .caption{margin-top:8px; text-align:center; line-height:1.35}
@@ -107,8 +149,7 @@
 <body>
   <header>
     <h1>Компас Киблы</h1>
-    <button id="startBtn" class="btn">Start</button>
-    <button id="enableMotionBtn" class="btn" title="Повторить запрос к датчикам">Разрешить ориентацию</button>
+    <button id="startBtn">Start</button>
     <div id="status"></div>
   </header>
 
@@ -116,18 +157,26 @@
     <div class="rim"></div>
     <div class="face"></div>
     <div class="ring"></div>
+
     <div class="hashes" id="hashes"></div>
 
     <div class="cardinals" aria-hidden="true">
-      <div class="lbl N">N</div><div class="lbl E">E</div>
-      <div class="lbl S">S</div><div class="lbl W">W</div>
+      <div class="lbl N">N</div>
+      <div class="lbl E">E</div>
+      <div class="lbl S">S</div>
+      <div class="lbl W">W</div>
     </div>
 
+    <!-- игла -->
     <div id="needle" class="needle" aria-hidden="true">
-      <div class="arrow"></div><div class="shaft"></div>
+      <div class="arrow"></div>
+      <div class="shaft"></div>
     </div>
 
+    <!-- центральный хаб — строго в центре -->
     <div class="hub-center" aria-hidden="true"></div>
+
+    <!-- Кибла под N -->
     <div class="kaaba" title="Кибла"></div>
   </div>
 
@@ -148,7 +197,6 @@
   const statusEl = EL('#status');
   const msgMain  = EL('#msgMain');
   const startBtn = EL('#startBtn');
-  const enableBtn= EL('#enableMotionBtn');
   const needle   = EL('#needle');
   const readout  = EL('#readout');
   const brngEl   = EL('#brng');
@@ -164,11 +212,14 @@
     hashes.appendChild(d);
   }
 
+  // координаты Каабы
   const KAABA = { lat: 21.422487, lon: 39.826206 };
+
   let user = { lat: null, lon: null };
-  let qiblaBearing = null;      // истинный азимут на Каабу
-  let lastHeading = null;       // курс устройства
-  const norm = a => (a%360+360)%360;
+  let qiblaBearing = null;  // истинный азимут на Киблу (0..360)
+  let lastHeading = null;   // курс устройства (0..360)
+  const norm  = a => (a%360+360)%360;
+
   const toRad = d => d * Math.PI / 180;
   const toDeg = r => r * 180 / Math.PI;
 
@@ -179,10 +230,20 @@
     return norm(toDeg(Math.atan2(y, x)));
   }
 
+  /* Визуальная инверсия:
+     На некоторых Android WebView alpha даёт «зеркальность».
+     Этот флаг делает движение стрелки синхронным с поворотом телефона. */
+  const INVERT_VISUAL = true;
+
   function updateNeedle(){
     if (qiblaBearing==null || lastHeading==null) return;
-    // «вправо — вправо»: поворот иглы = qibla - heading
-    const rel = norm(qiblaBearing - lastHeading);
+
+    // базовая относительная ориентация (математически правильная)
+    let rel = norm(qiblaBearing - lastHeading);
+
+    // визуальная синхронизация по требованию
+    if (INVERT_VISUAL) rel = norm(-rel);
+
     needle.style.transform = `translate(-50%,-50%) rotate(${rel}deg)`;
     brngEl.textContent = `${Math.round(qiblaBearing)}°`;
     headEl.textContent = `${Math.round(lastHeading)}°`;
@@ -198,44 +259,7 @@
     }
   }
 
-  // ── iOS: просим разрешение НА СЕНСОРЫ в контексте клика
-  async function enableOrientationPermission() {
-    let granted = true;
-
-    // Для iOS 13+ (Safari / WebView)
-    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
-      const state = await DeviceOrientationEvent.requestPermission();
-      granted = (state === 'granted');
-    }
-    // Иногда требуется и для Motion (не всегда, но попробуем мягко)
-    if (granted && window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
-      try {
-        const state2 = await DeviceMotionEvent.requestPermission();
-        granted = granted && (state2 === 'granted');
-      } catch { /* игнорируем */ }
-    }
-    if (!granted) throw new Error('orientation-denied');
-    // Подписываемся на события
-    window.addEventListener('deviceorientation', onOrient, true);
-    statusEl.textContent = 'Ориентация: OK';
-    return true;
-  }
-
-  function onOrient(e){
-    let heading = null;
-    if (typeof e.webkitCompassHeading === 'number') {
-      // iOS: истинный курс (0 = север, растёт по часовой)
-      heading = e.webkitCompassHeading;
-    } else if (typeof e.alpha === 'number') {
-      // Android: используем 360 - alpha, чтобы убрать «зеркальность»
-      heading = 360 - e.alpha;
-    }
-    if (heading != null) {
-      lastHeading = norm(heading);
-      updateNeedle();
-    }
-  }
-
+  // геолокация
   function askGeolocation() {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
@@ -251,46 +275,84 @@
           updateNeedle();
           resolve(true);
         },
-        err => { statusEl.textContent = 'Не удалось получить геопозицию: ' + err.message; resolve(false); },
+        err => {
+          statusEl.textContent = 'Не удалось получить геопозицию: ' + err.message;
+          resolve(false);
+        },
         { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
       );
     });
   }
 
-  // ── Кнопки
+  // датчики ориентации
+  function subscribeOrientation() {
+    return new Promise((resolve) => {
+      function onOrient(e) {
+        let heading = null;
+        if (typeof e.webkitCompassHeading === 'number') {
+          // iOS Safari/WebView — истинный курс (0 = север, растёт по часовой)
+          heading = e.webkitCompassHeading;
+        } else if (typeof e.alpha === 'number') {
+          // Android Chrome/WebView — классическая формула для истинного курса:
+          heading = 360 - e.alpha;
+        }
+        if (heading != null) {
+          lastHeading = norm(heading);
+          updateNeedle();
+        }
+      }
+
+      if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+          .then(state => {
+            if (state === 'granted') {
+              window.addEventListener('deviceorientation', onOrient, true);
+              statusEl.textContent += ' • Ориентация: OK';
+              resolve(true);
+            } else {
+              statusEl.textContent += ' • Ориентация: отклонено';
+              resolve(false);
+            }
+          })
+          .catch(err => { statusEl.textContent += ' • Ошибка ориентации: ' + err; resolve(false); });
+      } else if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', onOrient, true);
+        statusEl.textContent += ' • Ориентация: OK';
+        resolve(true);
+      } else {
+        statusEl.textContent += ' • Датчик ориентации недоступен';
+        resolve(false);
+      }
+    });
+  }
+
+  // Start
   startBtn.addEventListener('click', async () => {
     startBtn.disabled = true;
-    msgMain.textContent = 'Запрашиваю доступ к датчикам…';
-    try {
-      // ВАЖНО: запрашиваем PERMISSION СРАЗУ В КЛИКЕ (без промежуточных await)
-      await enableOrientationPermission();
-      msgMain.textContent = 'Запрашиваю геопозицию…';
-      // Гео можно уже ждать отдельно — контекст жеста не нужен
-      await askGeolocation();
-      msgMain.textContent = 'Вращайте устройство, пока стрелка не совпадёт с меткой';
-      enableBtn.style.display = 'none';
-    } catch (e) {
-      // Если ориентацию не дали — показываем кнопку повтора запроса
-      msgMain.textContent = 'Нужно разрешить доступ к ориентации устройства.';
-      enableBtn.style.display = 'inline-block';
-      startBtn.disabled = false;
-    }
-  });
+    startBtn.textContent = '…';
+    msgMain.textContent = 'Запрашиваю разрешения…';
 
-  enableBtn.addEventListener('click', async () => {
-    // Повторная попытка запроса — тоже в клике пользователя
-    try {
-      await enableOrientationPermission();
-      enableBtn.style.display = 'none';
-      msgMain.textContent = 'Запрашиваю геопозицию…';
-      await askGeolocation();
+    const geoOk = await askGeolocation();
+    const oriOk = await subscribeOrientation();
+
+    if (!geoOk && !oriOk) {
+      msgMain.textContent = 'Нет доступа к геопозиции и ориентации устройства.';
+      startBtn.disabled = false;
+      startBtn.textContent = 'Start';
+      return;
+    }
+
+    if (geoOk && !oriOk) {
+      msgMain.textContent = 'Ориентация недоступна. Стрелка может не вращаться.';
+    } else if (!geoOk && oriOk) {
+      msgMain.textContent = 'Геопозиция недоступна. Укажите позицию вручную (в приложении бота).';
+    } else {
       msgMain.textContent = 'Вращайте устройство, пока стрелка не совпадёт с меткой';
-    } catch {
-      msgMain.textContent = 'Ориентация всё ещё не разрешена. Откройте Настройки → Safari → Motion & Orientation Access.';
     }
   });
 })();
 </script>
 </body>
 </html>
+
 
