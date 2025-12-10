@@ -6,13 +6,10 @@
 <title>Компас Киблы</title>
 <style>
   :root{
-    /* палитра из первого варианта */
     --bg1:#2e3a87; --bg2:#7386ff;
     --dial:#f7fbff; --ring:#142352; --tick:#cfd6ff;
     --text:#ffffff; --muted:#c7d0ff;
     --accent:#f9c846; --accent2:#f2b22c; --ok:#00d08a;
-
-    /* золото центра/стрелки */
     --gold1:#ffe38f; --gold2:#f8b52c; --gold3:#ffcc33;
   }
   *{box-sizing:border-box}
@@ -23,7 +20,6 @@
     background: radial-gradient(120% 120% at 50% -10%, var(--bg2), var(--bg1));
     display:flex; flex-direction:column; align-items:center;
   }
-
   header{width:100%;max-width:560px; text-align:center; padding:18px 16px 8px}
   h1{margin:0 0 10px; font-size:22px; letter-spacing:.2px}
   #startBtn{
@@ -37,159 +33,67 @@
   #status{margin-top:10px; font-size:13px; color:var(--muted); min-height:1.2em}
 
   .dial-wrap{position:relative; width:min(90vw,520px); aspect-ratio:1; margin:16px auto 6px}
-
-  /* слои циферблата */
-  .rim{
-    position:absolute; inset:0; border-radius:50%;
-    background: radial-gradient(60% 60% at 50% 45%, #3a4aa1 0 30%, #1e295c 70%);
-    box-shadow: inset 0 0 60px rgba(0,0,0,.35), 0 18px 40px rgba(0,0,0,.38);
-    z-index:1;
-  }
-  .face{
-    position:absolute; inset:4.5%; border-radius:50%;
-    background: radial-gradient(90% 90% at 50% 45%, var(--dial) 0%, #e9eefc 70%, #d8e0fb 100%);
-    box-shadow: inset 0 8px 30px rgba(0,0,0,.12);
-    z-index:2;
-  }
-  .ring{
-    position:absolute; inset:11.5%; border-radius:50%;
-    border:12px solid rgba(20,35,82,.12);
-    z-index:2;
-  }
-
-  /* деления */
+  .rim{position:absolute; inset:0; border-radius:50%; background: radial-gradient(60% 60% at 50% 45%, #3a4aa1 0 30%, #1e295c 70%); box-shadow: inset 0 0 60px rgba(0,0,0,.35), 0 18px 40px rgba(0,0,0,.38); z-index:1;}
+  .face{position:absolute; inset:4.5%; border-radius:50%; background: radial-gradient(90% 90% at 50% 45%, var(--dial) 0%, #e9eefc 70%, #d8e0fb 100%); box-shadow: inset 0 8px 30px rgba(0,0,0,.12); z-index:2;}
+  .ring{position:absolute; inset:11.5%; border-radius:50%; border:12px solid rgba(20,35,82,.12); z-index:2;}
   .hashes{position:absolute; inset:12.5%; border-radius:50%; z-index:3; pointer-events:none;}
-  .tick{
-    position:absolute; left:50%; top:50%;
-    width:2px; height:13%;
-    background:var(--tick);
-    transform-origin:50% 0%;
-    opacity:.95;
-  }
+  .tick{position:absolute; left:50%; top:50%; width:2px; height:13%; background:var(--tick); transform-origin:50% 0%; opacity:.95;}
   .tick.major{width:4px; height:15%; background:#9fb0ff}
-
-  /* NSEW — отдельный слой, чтобы ничего не перекрывалось */
   .cardinals{position:absolute; inset:0; z-index:5; pointer-events:none;}
-  .cardinals .lbl{
-    position:absolute; left:50%; top:50%;
-    transform:translate(-50%,-50%);
-    font-weight:900; letter-spacing:.5px;
-    color:#0a1b4d;
-    text-shadow:0 1px 0 #fff8, 0 0 12px #fff8;
-    padding:4px 8px; border-radius:10px;
-    background:rgba(255,255,255,.65);
-    border:1px solid rgba(14,24,60,.1);
-  }
+  .cardinals .lbl{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-weight:900; letter-spacing:.5px; color:#0a1b4d; text-shadow:0 1px 0 #fff8, 0 0 12px #fff8; padding:4px 8px; border-radius:10px; background:rgba(255,255,255,.65); border:1px solid rgba(14,24,60,.1);}
   .cardinals .N{top:5.5%;  font-size:20px}
   .cardinals .S{top:94.5%; font-size:18px}
   .cardinals .E{left:94.5%; font-size:18px}
   .cardinals .W{left:5.5%;  font-size:18px}
-
-  /* игла: центр вращения ровно по центру; цвет = как у центрального круга (золото) */
-  .needle{
-    position:absolute; left:50%; top:50%;
-    width:80%; height:80%;
-    transform:translate(-50%,-50%) rotate(0deg);
-    transform-origin:50% 50%;
-    z-index:6; pointer-events:none;
-  }
-  .needle .arrow{
-    position:absolute; left:50%; top:8%;
-    transform:translateX(-50%);
-    width:0; height:0;
-    border-left:22px solid transparent; border-right:22px solid transparent;
-    border-bottom:36px solid var(--gold3); /* остриё — золото */
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,.25));
-  }
-  .needle .shaft{
-    position:absolute; left:50%; top:12%;
-    transform:translateX(-50%);
-    width:12px; height:46%;
-    background:linear-gradient(180deg, var(--gold1), var(--gold2)); /* тело — золото */
-    border-radius:12px;
-    box-shadow: 0 6px 18px rgba(0,0,0,.25);
-  }
-
-  /* центральный хаб — строго по центру */
-  .hub-center{
-    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    width:58px; height:58px; border-radius:50%;
-    background: radial-gradient(circle at 35% 35%, var(--gold1) 0 40%, var(--gold2) 70%);
-    box-shadow: inset 0 -8px 14px rgba(0,0,0,.15), 0 8px 18px rgba(0,0,0,.22);
-    border:3px solid #fff;
-    z-index:7; pointer-events:none;
-  }
-
-  /* метка Киблы — под N (сверху), меньше и не перекрывает букву */
-  .kaaba{
-    position:absolute; left:50%; top:14%;
-    transform:translate(-50%,-50%);
-    width:32px; height:32px; border-radius:8px;
-    background:
-      linear-gradient(135deg, #2b2b2b 63%, #ffd23c 63%) no-repeat,
-      linear-gradient(#111, #333);
-    box-shadow: 0 10px 20px rgba(0,0,0,.35);
-    z-index:4; /* ниже подписей N/E/S/W */
-  }
-
+  .needle{position:absolute; left:50%; top:50%; width:80%; height:80%; transform:translate(-50%,-50%) rotate(0deg); transform-origin:50% 50%; z-index:6; pointer-events:none;}
+  .needle .arrow{position:absolute; left:50%; top:8%; transform:translateX(-50%); width:0; height:0; border-left:22px solid transparent; border-right:22px solid transparent; border-bottom:36px solid var(--gold3); filter: drop-shadow(0 4px 6px rgba(0,0,0,.25));}
+  .needle .shaft{position:absolute; left:50%; top:12%; transform:translateX(-50%); width:12px; height:46%; background:linear-gradient(180deg, var(--gold1), var(--gold2)); border-radius:12px; box-shadow: 0 6px 18px rgba(0,0,0,.25);}
+  .hub-center{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:58px; height:58px; border-radius:50%; background: radial-gradient(circle at 35% 35%, var(--gold1) 0 40%, var(--gold2) 70%); box-shadow: inset 0 -8px 14px rgba(0,0,0,.15), 0 8px 18px rgba(0,0,0,.22); border:3px solid #fff; z-index:7; pointer-events:none;}
+  .kaaba{position:absolute; left:50%; top:14%; transform:translate(-50%,-50%); width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg, #2b2b2b 63%, #ffd23c 63%) no-repeat, linear-gradient(#111, #333); box-shadow: 0 10px 20px rgba(0,0,0,.35); z-index:4;}
   .caption{margin-top:8px; text-align:center; line-height:1.35}
   .hint{font-size:14px; color:var(--muted)}
   .ok{color:var(--ok); font-weight:800}
-
-  .panel{
-    margin-top:10px; padding:10px 14px; border-radius:12px;
-    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08);
-    font-size:13px; text-align:center; backdrop-filter: blur(6px);
-    max-width:min(92vw,560px);
-  }
+  .panel{margin-top:10px; padding:10px 14px; border-radius:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); font-size:13px; text-align:center; backdrop-filter: blur(6px); max-width:min(92vw,560px);}
   .panel b{color:var(--gold1)}
   footer{margin-top:auto; padding:16px; font-size:12px; color:var(--muted); text-align:center}
 </style>
 </head>
 <body>
-  <header>
-    <h1>Компас Киблы</h1>
-    <button id="startBtn">Start</button>
-    <div id="status"></div>
-  </header>
+<header>
+  <h1>Компас Киблы</h1>
+  <button id="startBtn">Start</button>
+  <div id="status"></div>
+</header>
 
-  <div class="dial-wrap" aria-label="Компас">
-    <div class="rim"></div>
-    <div class="face"></div>
-    <div class="ring"></div>
-
-    <div class="hashes" id="hashes"></div>
-
-    <div class="cardinals" aria-hidden="true">
-      <div class="lbl N">N</div>
-      <div class="lbl E">E</div>
-      <div class="lbl S">S</div>
-      <div class="lbl W">W</div>
-    </div>
-
-    <!-- игла -->
-    <div id="needle" class="needle" aria-hidden="true">
-      <div class="arrow"></div>
-      <div class="shaft"></div>
-    </div>
-
-    <!-- центральный хаб — строго в центре -->
-    <div class="hub-center" aria-hidden="true"></div>
-
-    <!-- Кибла под N -->
-    <div class="kaaba" title="Кибла"></div>
+<div class="dial-wrap" aria-label="Компас">
+  <div class="rim"></div>
+  <div class="face"></div>
+  <div class="ring"></div>
+  <div class="hashes" id="hashes"></div>
+  <div class="cardinals" aria-hidden="true">
+    <div class="lbl N">N</div>
+    <div class="lbl E">E</div>
+    <div class="lbl S">S</div>
+    <div class="lbl W">W</div>
   </div>
-
-  <div class="caption">
-    <div id="msgMain">Нажмите <b>Start</b> и разрешите доступ к геопозиции и ориентации</div>
-    <div class="hint">Держите устройство параллельно земле</div>
+  <div id="needle" class="needle" aria-hidden="true">
+    <div class="arrow"></div>
+    <div class="shaft"></div>
   </div>
+  <div class="hub-center" aria-hidden="true"></div>
+  <div class="kaaba" title="Кибла"></div>
+</div>
 
-  <div class="panel" id="readout" hidden>
-    Азимут на Киблу: <b id="brng">—°</b> • Ваш курс: <b id="head">—°</b>
-  </div>
+<div class="caption">
+  <div id="msgMain">Нажмите <b>Start</b> и разрешите доступ к геопозиции и ориентации</div>
+  <div class="hint">Держите устройство параллельно земле</div>
+</div>
 
-  <footer>Если стрелка не двигается — у устройства нет компаса или браузер запретил датчики. На iOS подтвердите «Доступ к движению и ориентации».</footer>
+<div class="panel" id="readout" hidden>
+  Азимут на Киблу: <b id="brng">—°</b> • Ваш курс: <b id="head">—°</b>
+</div>
+
+<footer>Если стрелка не двигается — у устройства нет компаса или браузер запретил датчики. На iOS подтвердите «Доступ к движению и ориентации».</footer>
 
 <script>
 (function () {
@@ -201,8 +105,8 @@
   const readout  = EL('#readout');
   const brngEl   = EL('#brng');
   const headEl   = EL('#head');
+  const kaabaEl  = EL('.kaaba');
 
-  // деления каждые 10°, утолщённые на 0/90/180/270
   const hashes = document.getElementById('hashes');
   for (let i=0;i<36;i++){
     const d = document.createElement('div');
@@ -212,14 +116,11 @@
     hashes.appendChild(d);
   }
 
-  // координаты Каабы
   const KAABA = { lat: 21.422487, lon: 39.826206 };
-
   let user = { lat: null, lon: null };
-  let qiblaBearing = null;  // истинный азимут на Киблу (0..360)
-  let lastHeading = null;   // курс устройства (0..360)
+  let qiblaBearing = null;
+  let lastHeading = null;
   const norm  = a => (a%360+360)%360;
-
   const toRad = d => d * Math.PI / 180;
   const toDeg = r => r * 180 / Math.PI;
 
@@ -230,21 +131,17 @@
     return norm(toDeg(Math.atan2(y, x)));
   }
 
-  /* Визуальная инверсия:
-     На некоторых Android WebView alpha даёт «зеркальность».
-     Этот флаг делает движение стрелки синхронным с поворотом телефона. */
   const INVERT_VISUAL = true;
 
   function updateNeedle(){
     if (qiblaBearing==null || lastHeading==null) return;
 
-    // базовая относительная ориентация (математически правильная)
     let rel = norm(qiblaBearing - lastHeading);
-
-    // визуальная синхронизация по требованию
     if (INVERT_VISUAL) rel = norm(-rel);
 
     needle.style.transform = `translate(-50%,-50%) rotate(${rel}deg)`;
+    kaabaEl.style.transform = `translate(-50%,-50%) rotate(${rel}deg)`;
+
     brngEl.textContent = `${Math.round(qiblaBearing)}°`;
     headEl.textContent = `${Math.round(lastHeading)}°`;
     readout.hidden = false;
@@ -259,7 +156,6 @@
     }
   }
 
-  // геолокация
   function askGeolocation() {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
@@ -284,16 +180,13 @@
     });
   }
 
-  // датчики ориентации
   function subscribeOrientation() {
     return new Promise((resolve) => {
       function onOrient(e) {
         let heading = null;
         if (typeof e.webkitCompassHeading === 'number') {
-          // iOS Safari/WebView — истинный курс (0 = север, растёт по часовой)
           heading = e.webkitCompassHeading;
         } else if (typeof e.alpha === 'number') {
-          // Android Chrome/WebView — классическая формула для истинного курса:
           heading = 360 - e.alpha;
         }
         if (heading != null) {
@@ -326,7 +219,6 @@
     });
   }
 
-  // Start
   startBtn.addEventListener('click', async () => {
     startBtn.disabled = true;
     startBtn.textContent = '…';
@@ -354,5 +246,3 @@
 </script>
 </body>
 </html>
-
-
